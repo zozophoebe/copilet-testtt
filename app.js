@@ -137,7 +137,8 @@ function renderTodos() {
   if (activeFilter === "active") {
     emptyState.textContent = "目前沒有未完成的待辦事項。";
   } else if (activeFilter === "completed") {
-    emptyState.textContent = "目前沒有已完成的待辦事項。";
+    emptyState.textContent =
+      "目前沒有符合「已完成」篩選的事項；項目不會因此刪除，切換至「全部」即可查看其他待辦。";
   } else {
     emptyState.textContent = "還沒有任何待辦事項，新增一個吧!";
   }
