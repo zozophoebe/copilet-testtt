@@ -6,6 +6,7 @@ const input = document.querySelector("#todo-input");
 const list = document.querySelector("#todo-list");
 const emptyState = document.querySelector("#empty-state");
 const count = document.querySelector("#todo-count");
+const clearCompletedButton = document.querySelector("#clear-completed");
 const themeToggle = document.querySelector("#theme-toggle");
 const themeIcon = document.querySelector("#theme-icon");
 const themeLabel = document.querySelector("#theme-label");
@@ -131,7 +132,9 @@ function renderTodos() {
   }
 
   const remaining = todos.filter((todo) => !todo.completed).length;
+  const completedCount = todos.length - remaining;
   count.textContent = `${remaining} 項`;
+  clearCompletedButton.hidden = completedCount === 0;
   emptyState.hidden = visibleTodos.length > 0;
 
   if (activeFilter === "active") {
@@ -156,6 +159,21 @@ document.querySelector(".filter-bar").addEventListener("click", (event) => {
     activeFilter = button.dataset.filter;
     renderTodos();
   }
+});
+
+clearCompletedButton.addEventListener("click", () => {
+  const completedCount = todos.filter((todo) => todo.completed).length;
+  if (completedCount === 0) {
+    return;
+  }
+
+  if (!window.confirm(`確定要清除 ${completedCount} 項已完成的待辦事項嗎？`)) {
+    return;
+  }
+
+  todos = todos.filter((todo) => !todo.completed);
+  saveTodos();
+  renderTodos();
 });
 
 form.addEventListener("submit", (event) => {

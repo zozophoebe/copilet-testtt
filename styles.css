@@ -394,6 +394,30 @@ h1 {
   font-variant-numeric: tabular-nums;
 }
 
+.clear-completed-button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--color-danger);
+  border-radius: 6px;
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 650;
+  transition:
+    background 150ms ease,
+    color 150ms ease;
+}
+
+.clear-completed-button:hover {
+  color: var(--color-button-text);
+  background: var(--color-danger);
+}
+
+.clear-completed-button[hidden] {
+  display: none;
+}
+
 .page-note {
   margin: 17px 0 0;
   color: var(--color-note);
