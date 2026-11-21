@@ -194,12 +194,15 @@ h1 {
 }
 
 .add-form {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
   margin-bottom: 22px;
 }
 
 .add-form input {
+  grid-column: 1;
+  grid-row: 1;
   min-width: 0;
   min-height: 48px;
   flex: 1;
@@ -226,6 +229,8 @@ h1 {
 }
 
 .add-button {
+  grid-column: 2;
+  grid-row: 1;
   display: inline-flex;
   min-width: 88px;
   min-height: 48px;
@@ -257,6 +262,42 @@ h1 {
   font-size: 19px;
   font-weight: 400;
   line-height: 1;
+}
+
+.schedule-picker {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 7px;
+}
+
+.schedule-picker-label {
+  margin-right: 2px;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.schedule-option {
+  min-height: 32px;
+  padding: 0 11px;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  color: var(--color-muted);
+  background: var(--color-field);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition:
+    color 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease;
+}
+
+.schedule-option:hover,
+.schedule-option.is-active {
+  border-color: var(--color-accent);
+  color: var(--color-accent-strong);
+  background: var(--color-accent-soft);
 }
 
 .filter-bar {
@@ -324,12 +365,35 @@ h1 {
 .todo-text {
   min-width: 0;
   flex: 1;
+  color: var(--color-ink);
   overflow-wrap: anywhere;
   font-size: 14px;
+  font-weight: 600;
   line-height: 1.6;
   transition:
     color 160ms ease,
     opacity 160ms ease;
+}
+
+.todo-meta {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.todo-date-label {
+  color: var(--color-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.todo-date-label.is-overdue {
+  color: var(--color-danger);
+  font-weight: 700;
 }
 
 .todo-item.is-completed .todo-text {

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-Hant">
+<html lang="zh-Hant" data-theme="light">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -46,6 +46,30 @@
             <span aria-hidden="true">＋</span>
             <span>新增</span>
           </button>
+          <div
+            class="schedule-picker"
+            id="schedule-picker"
+            role="group"
+            aria-label="選擇完成期限"
+          >
+            <span class="schedule-picker-label">期限</span>
+            <button
+              class="schedule-option is-active"
+              type="button"
+              data-schedule="today"
+              aria-pressed="true"
+            >
+              今天
+            </button>
+            <button
+              class="schedule-option"
+              type="button"
+              data-schedule="two-weeks"
+              aria-pressed="false"
+            >
+              兩週內
+            </button>
+          </div>
         </form>
 
         <nav class="filter-bar" aria-label="篩選待辦事項">
@@ -72,6 +96,22 @@
             aria-pressed="false"
           >
             已完成
+          </button>
+          <button
+            class="filter-button"
+            type="button"
+            data-filter="today"
+            aria-pressed="false"
+          >
+            今天
+          </button>
+          <button
+            class="filter-button"
+            type="button"
+            data-filter="two-weeks"
+            aria-pressed="false"
+          >
+            兩週內
           </button>
         </nav>
 

@@ -7,12 +7,70 @@ const list = document.querySelector("#todo-list");
 const emptyState = document.querySelector("#empty-state");
 const count = document.querySelector("#todo-count");
 const clearCompletedButton = document.querySelector("#clear-completed");
+const schedulePicker = document.querySelector("#schedule-picker");
 const themeToggle = document.querySelector("#theme-toggle");
 const themeIcon = document.querySelector("#theme-icon");
 const themeLabel = document.querySelector("#theme-label");
-const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
 
 let activeFilter = "all";
+let activeSchedule = "today";
+
+function getLocalDateString(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function isValidDateString(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  return (
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
+  );
+}
+
+function getCreatedDateFromId(id) {
+  const timestamp = Number(String(id).split("-")[0]);
+  return Number.isFinite(timestamp) && timestamp > 0
+    ? getLocalDateString(new Date(timestamp))
+    : getLocalDateString();
+}
+
+function getDaysSinceCreated(createdAt) {
+  const [createdYear, createdMonth, createdDay] = createdAt
+    .split("-")
+    .map(Number);
+  const today = new Date();
+  const createdUtc = Date.UTC(createdYear, createdMonth - 1, createdDay);
+  const todayUtc = Date.UTC(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
+  return Math.max(0, Math.floor((todayUtc - createdUtc) / 86400000));
+}
+
+function getScheduleLabel(todo) {
+  const daysSinceCreated = getDaysSinceCreated(todo.createdAt);
+  if (todo.schedule === "two-weeks") {
+    const daysRemaining = 14 - daysSinceCreated;
+    if (daysRemaining > 0) {
+      return `剩 ${daysRemaining} 天`;
+    }
+    return daysRemaining === 0
+      ? "今天到期"
+      : `逾期 ${Math.abs(daysRemaining)} 天`;
+  }
+
+  return `${daysSinceCreated} 天前`;
+}
 
 function loadThemePreference() {
   try {
@@ -23,12 +81,8 @@ function loadThemePreference() {
   }
 }
 
-function applyTheme(theme, isManual = true) {
-  if (isManual) {
-    document.documentElement.dataset.theme = theme;
-  } else {
-    delete document.documentElement.dataset.theme;
-  }
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
   const isDark = theme === "dark";
   themeToggle.setAttribute("aria-pressed", String(isDark));
   themeIcon.textContent = isDark ? "☀️" : "🌙";
@@ -36,22 +90,11 @@ function applyTheme(theme, isManual = true) {
 }
 
 const savedTheme = loadThemePreference();
-let hasManualTheme = savedTheme !== null;
-applyTheme(
-  savedTheme || (systemTheme.matches ? "dark" : "light"),
-  hasManualTheme,
-);
-
-systemTheme.addEventListener("change", (event) => {
-  if (!hasManualTheme) {
-    applyTheme(event.matches ? "dark" : "light", false);
-  }
-});
+applyTheme(savedTheme || "light");
 
 themeToggle.addEventListener("click", () => {
   const nextTheme =
     document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-  hasManualTheme = true;
   applyTheme(nextTheme);
   try {
     localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
@@ -67,11 +110,18 @@ function loadTodos() {
     return Array.isArray(savedTodos)
       ? savedTodos
           .filter((todo) => todo && typeof todo.text === "string")
-          .map((todo) => ({
-            id: String(todo.id),
-            text: todo.text,
-            completed: Boolean(todo.completed),
-          }))
+          .map((todo) => {
+            const id = String(todo.id);
+            return {
+              id,
+              text: todo.text,
+              completed: Boolean(todo.completed),
+              schedule: todo.schedule === "two-weeks" ? "two-weeks" : "today",
+              createdAt: isValidDateString(todo.createdAt)
+                ? todo.createdAt
+                : getCreatedDateFromId(id),
+            };
+          })
       : [];
   } catch {
     return [];
@@ -98,6 +148,9 @@ function renderTodos() {
     if (activeFilter === "completed") {
       return todo.completed;
     }
+    if (activeFilter === "today" || activeFilter === "two-weeks") {
+      return todo.schedule === activeFilter;
+    }
     return true;
   });
 
@@ -116,6 +169,18 @@ function renderTodos() {
     text.className = "todo-text";
     text.textContent = todo.text;
 
+    const metadata = document.createElement("span");
+    metadata.className = "todo-meta";
+
+    const dateLabel = document.createElement("span");
+    const daysSinceCreated = getDaysSinceCreated(todo.createdAt);
+    const isOverdue = todo.schedule === "two-weeks" && daysSinceCreated > 14;
+    dateLabel.className = isOverdue
+      ? "todo-date-label is-overdue"
+      : "todo-date-label";
+    dateLabel.textContent = getScheduleLabel(todo);
+    metadata.append(dateLabel);
+
     const deleteButton = document.createElement("button");
     deleteButton.className = "delete-button";
     deleteButton.type = "button";
@@ -127,7 +192,7 @@ function renderTodos() {
       item.classList.add("is-completed");
     }
 
-    item.append(checkbox, text, deleteButton);
+    item.append(checkbox, text, metadata, deleteButton);
     list.append(item);
   }
 
@@ -142,6 +207,10 @@ function renderTodos() {
   } else if (activeFilter === "completed") {
     emptyState.textContent =
       "目前沒有符合「已完成」篩選的事項；項目不會因此刪除，切換至「全部」即可查看其他待辦。";
+  } else if (activeFilter === "today") {
+    emptyState.textContent = "目前沒有「今天」類型的待辦事項。";
+  } else if (activeFilter === "two-weeks") {
+    emptyState.textContent = "目前沒有「兩週內」類型的待辦事項。";
   } else {
     emptyState.textContent = "還沒有任何待辦事項，新增一個吧!";
   }
@@ -151,12 +220,26 @@ function renderTodos() {
     button.classList.toggle("is-active", isActive);
     button.setAttribute("aria-pressed", String(isActive));
   });
+
+  document.querySelectorAll(".schedule-option").forEach((button) => {
+    const isActive = button.dataset.schedule === activeSchedule;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
 }
 
 document.querySelector(".filter-bar").addEventListener("click", (event) => {
   const button = event.target.closest(".filter-button");
   if (button) {
     activeFilter = button.dataset.filter;
+    renderTodos();
+  }
+});
+
+schedulePicker.addEventListener("click", (event) => {
+  const button = event.target.closest(".schedule-option");
+  if (button) {
+    activeSchedule = button.dataset.schedule;
     renderTodos();
   }
 });
@@ -189,6 +272,8 @@ form.addEventListener("submit", (event) => {
     id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
     text,
     completed: false,
+    schedule: activeSchedule,
+    createdAt: getLocalDateString(),
   });
   saveTodos();
   renderTodos();
